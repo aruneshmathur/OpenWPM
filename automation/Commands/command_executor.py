@@ -1,5 +1,5 @@
 
-from . import browser_commands, profile_commands
+from . import browser_commands, profile_commands, custom_commands
 
 
 def execute_command(command, webdriver, browser_settings, browser_params,
@@ -64,3 +64,9 @@ def execute_command(command, webdriver, browser_settings, browser_params,
                     "manager_params": manager_params,
                     "extension_socket": extension_socket}
         command[1](*command[2], **arg_dict)
+
+    if command[0] == 'FILL_FORMS':
+        custom_commands.fill_forms(url=command[1], user_data=command[2], num_links=command[3],
+                                   page_timeout=command[4], debug=command[5], visit_id=command[6],
+                                   webdriver=webdriver, browser_params=browser_params,
+                                   manager_params=manager_params, extension_socket=extension_socket)

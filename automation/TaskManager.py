@@ -443,7 +443,7 @@ class TaskManager:
         start_time = None
         for command_and_timeout in command_sequence.commands_with_timeout:
             command, timeout = command_and_timeout
-            if command[0] in ['GET', 'BROWSE',
+            if command[0] in ['GET', 'BROWSE', 'FILL_FORMS',
                               'SAVE_SCREENSHOT',
                               'SCREENSHOT_FULL_PAGE',
                               'DUMP_PAGE_SOURCE',

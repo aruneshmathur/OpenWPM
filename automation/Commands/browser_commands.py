@@ -1,4 +1,5 @@
 
+import shutil
 import gzip
 import json
 import logging
@@ -217,7 +218,7 @@ def _stitch_screenshot_parts(visit_id, crawl_id, manager_params):
     max_width = -1
     images = dict()
     parts = list()
-    for f in glob(os.path.join(manager_params['screenshot_path'],
+    for f in glob(os.path.join(manager_params['screenshot_path'], str(visit_id),
                                'parts',
                                '%i*-part-*.png' % visit_id)):
 
@@ -245,7 +246,7 @@ def _stitch_screenshot_parts(visit_id, crawl_id, manager_params):
 
     # Output filename same for all parts, so we can just use last filename
     outname = outname + '.png'
-    outname = os.path.join(manager_params['screenshot_path'], outname)
+    outname = os.path.join(manager_params['screenshot_path'], str(visit_id), outname)
     output = Image.new('RGB', (max_width, total_height))
 
     # Compute dimensions for output image
@@ -268,9 +269,9 @@ def _stitch_screenshot_parts(visit_id, crawl_id, manager_params):
 def screenshot_full_page(visit_id, crawl_id, driver, manager_params,
                          suffix=''):
 
-    outdir = os.path.join(manager_params['screenshot_path'], 'parts')
+    outdir = os.path.join(manager_params['screenshot_path'], str(visit_id), 'parts')
     if not os.path.isdir(outdir):
-        os.mkdir(outdir)
+        os.makedirs(outdir)
     if suffix != '':
         suffix = '-' + suffix
     urlhash = md5(driver.current_url.encode('utf-8')).hexdigest()
@@ -315,6 +316,7 @@ def screenshot_full_page(visit_id, crawl_id, driver, manager_params,
         return
 
     _stitch_screenshot_parts(visit_id, crawl_id, manager_params)
+    shutil.rmtree(outdir)
 
 
 def dump_page_source(visit_id, driver, manager_params, suffix=''):
