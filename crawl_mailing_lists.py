@@ -2,7 +2,7 @@ from automation import TaskManager, CommandSequence
 import pandas as pd
 
 # Constants
-NUM_BROWSERS = 3
+NUM_BROWSERS = 1
 output_dir = '/mnt/5tb/political-email-output'
 db_name = 'crawl.sqlite'
 # Site list one of: shopping-500.csv, news-500.csv, top-1m.csv

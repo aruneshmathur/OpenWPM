@@ -14,7 +14,7 @@ from . import configure_firefox
 from .selenium_firefox import (FirefoxBinary, FirefoxLogInterceptor,
                                FirefoxProfile, Options)
 
-DEFAULT_SCREEN_RES = (1366, 7000)
+DEFAULT_SCREEN_RES = (1366, 10000)
 ALL_RESOURCE_TYPES = {
     "beacon",
     "csp_report",

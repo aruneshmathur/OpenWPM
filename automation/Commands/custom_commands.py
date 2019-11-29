@@ -63,13 +63,13 @@ _LINK_TEXT_BLACKLIST = ['unsubscribe', 'mobile', 'phone']
 # Keywords
 _KEYWORDS_EMAIL  = ['email', 'e-mail', 'subscribe', 'newsletter']
 _KEYWORDS_EMAIL_BLACKLIST = ['contact us', 'contact me', 'message', 'subject', 'your message', 'comment']
-_KEYWORDS_SUBMIT = ['submit', 'sign up', 'sign-up', 'signup', 'sign me up', 'subscribe', 'register', 'join', 'i\'m in']
+_KEYWORDS_SUBMIT = ['submit', 'sign up', 'sign-up', 'signup', 'sign me up', 'subscribe', 'register', 'join', 'i\'m in', 'update me']
 _KEYWORDS_SELECT = ['yes', 'ny', 'new york', 'united states', 'usa', '1990', 'english']
 _DOMAIN_EXCEPTIONS = ['actionnetwork.org', 'mailchi.mp', 'myngp.com', 'bsd.net', 'webaction.org', 'ngpvan.com', 'actnow.io', 'myngp.com', 'list-manage.com', 'wiredforchange.com', 'ipetitions.com', 'eepurl.com']
 
 # Other constants
 _PAGE_LOAD_TIME = 7  # time to wait for pages to load (in seconds)
-_FORM_SUBMIT_SLEEP = 2  # time to wait after submitting a form (in seconds)
+_FORM_SUBMIT_SLEEP = 4  # time to wait after submitting a form (in seconds)
 _FORM_CONTAINER_SEARCH_LIMIT = 4  # number of parents of input fields to search
 
 # The maximum number of popups we will dismiss.
@@ -817,4 +817,3 @@ def _check_form_blacklist(form):
             return True
 
     return False
-
