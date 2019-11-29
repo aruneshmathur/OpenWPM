@@ -1,10 +1,8 @@
 from automation import TaskManager, CommandSequence
-from urllib import urlencode
-from urllib2 import Request, urlopen
 import pandas as pd
 
 # Constants
-NUM_BROWSERS = 1
+NUM_BROWSERS = 3
 output_dir = '/mnt/5tb/political-email-output'
 db_name = 'crawl.sqlite'
 # Site list one of: shopping-500.csv, news-500.csv, top-1m.csv
@@ -30,7 +28,7 @@ def crawl_site(site, manager, user_data):
 manager_params, browser_params = TaskManager.load_default_params(NUM_BROWSERS)
 
 # Update browser configuration (use this for per-browser settings)
-for i in xrange(NUM_BROWSERS):
+for i in range(NUM_BROWSERS):
     browser_params[i]['headless'] = True
     browser_params[i]['bot_mitigation'] = True
     browser_params[i]['disable_flash'] = True
@@ -40,6 +38,7 @@ for i in xrange(NUM_BROWSERS):
     browser_params[i]['cookie_instrument'] = True
     browser_params[i]['http_instrument'] = True
     browser_params[i]['save_javascript'] = True
+    browser_params[i]['save_content'] = True
 
 # Update TaskManager configuration (use this for crawl-wide settings)
 manager_params['data_directory'] = output_dir
