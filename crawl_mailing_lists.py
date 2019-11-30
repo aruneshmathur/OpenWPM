@@ -19,6 +19,7 @@ def get_site(site):
 # Visits the sites
 def crawl_site(site, manager, user_data):
     command_sequence = CommandSequence.CommandSequence(site, reset=True)
+    command_sequence.get(sleep=10, timeout=240)
     command_sequence.fill_forms(user_data=user_data, num_links=3,
                                 timeout=120, page_timeout=8, debug=True)
     manager.execute_command_sequence(command_sequence)

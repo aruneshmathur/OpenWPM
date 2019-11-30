@@ -25,6 +25,7 @@ _LINK_TEXT_RANK = [
     # probably newsletters
     (_TYPE_TEXT, 'newsletter', 10, _FLAG_NONE),
     (_TYPE_TEXT, 'stay informed',   9, _FLAG_NONE),
+    (_TYPE_TEXT, 'stay updated',   9, _FLAG_NONE),
     (_TYPE_TEXT, 'subscribe',   9, _FLAG_NONE),
     (_TYPE_TEXT, 'inbox',       8, _FLAG_NONE),
     (_TYPE_TEXT, 'keep in touch',  6, _FLAG_NONE),
@@ -37,9 +38,10 @@ _LINK_TEXT_RANK = [
     (_TYPE_TEXT, 'take action',       5, _FLAG_NONE),
     (_TYPE_TEXT, 'get involved',       5, _FLAG_NONE),
     (_TYPE_TEXT, 'get engaged',       5, _FLAG_NONE),
+    (_TYPE_TEXT, 'support',   5, _FLAG_NONE),
     (_TYPE_TEXT, 'volunteer',   4, _FLAG_NONE),
     (_TYPE_TEXT, 'register',   4, _FLAG_NONE),
-    (_TYPE_TEXT, 'email',       4, _FLAG_NONE),
+    (_TYPE_TEXT, 'email',       3, _FLAG_NONE),
     (_TYPE_TEXT, 'create',     4, _FLAG_NONE),
     (_TYPE_TEXT, 'petition',       4, _FLAG_NONE),
     (_TYPE_TEXT, 'connect',       4, _FLAG_NONE),
@@ -62,7 +64,8 @@ _LINK_TEXT_BLACKLIST = ['unsubscribe', 'mobile', 'phone']
 
 # Keywords
 _KEYWORDS_EMAIL  = ['email', 'e-mail', 'subscribe', 'newsletter']
-_KEYWORDS_EMAIL_BLACKLIST = ['contact us', 'contact me', 'message', 'subject', 'your message', 'comment']
+# _KEYWORDS_EMAIL_BLACKLIST = ['contact us', 'contact me', 'message', 'subject', 'your message', 'comment']
+_KEYWORDS_EMAIL_BLACKLIST = []
 _KEYWORDS_SUBMIT = ['submit', 'sign up', 'sign-up', 'signup', 'sign me up', 'subscribe', 'register', 'join', 'i\'m in', 'update me']
 _KEYWORDS_SELECT = ['yes', 'ny', 'new york', 'united states', 'usa', '1990', 'english']
 _DOMAIN_EXCEPTIONS = ['actionnetwork.org', 'mailchi.mp', 'myngp.com', 'bsd.net', 'webaction.org', 'ngpvan.com', 'actnow.io', 'myngp.com', 'list-manage.com', 'wiredforchange.com', 'ipetitions.com', 'eepurl.com']
@@ -101,8 +104,8 @@ def fill_forms(url, user_data, num_links, page_timeout, debug, visit_id,
     internal links and scans those pages for a form. Submits the form if found.
     """
     # load the site
-    webdriver.set_page_load_timeout(page_timeout)
-    get_website(url, 0, visit_id, webdriver, browser_params, extension_socket)
+    # webdriver.set_page_load_timeout(page_timeout)
+    # get_website(url, 0, visit_id, webdriver, browser_params, extension_socket)
 
     # connect to the logger
     logger = logging.getLogger('openwpm')
@@ -774,7 +777,7 @@ def _form_fill_and_submit(form, user_info, webdriver, visit_id, clear, browser_p
 
 def _element_contains_text(element, text):
     """Scans various element attributes for the given text."""
-    attributes = ['name', 'class', 'id', 'placeholder', 'value', 'for', 'title', 'innerHTML', 'aria-label']
+    attributes = ['name', 'class', 'id', 'placeholder', 'value', 'for', 'title', 'innerHTML', 'aria-label', 'autocomplete', 'x-autocompletetype', 'data-aid']
     text_list = text if type(text) is list else [text]
     for s in text_list:
         for attr in attributes:
