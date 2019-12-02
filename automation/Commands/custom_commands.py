@@ -115,10 +115,16 @@ def fill_forms(url, user_data, num_links, page_timeout, debug, visit_id,
 
     # take a screenshot, and try to find a newsletter form on the landing page
     if debug:
-        screenshot_full_page(visit_id, browser_params['crawl_id'], webdriver, manager_params, 'landing_page')
+        try:
+            screenshot_full_page(visit_id, browser_params['crawl_id'], webdriver, manager_params, 'landing_page')
+        except Exception as e:
+            logger.exception('Error while taking screenshot: %s' % str(e))
 
     if browser_params['bot_mitigation']:
-        bot_mitigation(webdriver)
+        try:
+            bot_mitigation(webdriver)
+        except:
+            pass
 
     if _find_and_fill_form(webdriver, user_data, visit_id, debug, browser_params, manager_params, logger):
         if debug: logger.debug('Done searching and submitting forms, exiting')
@@ -208,7 +214,10 @@ def fill_forms(url, user_data, num_links, page_timeout, debug, visit_id,
 
             wait_until_loaded(webdriver, _PAGE_LOAD_TIME)
             if browser_params['bot_mitigation']:
-                bot_mitigation(webdriver)
+                try:
+                    bot_mitigation(webdriver)
+                except:
+                    pass
 
             # find newsletter form
             if _find_and_fill_form(webdriver, user_data, visit_id, debug, browser_params, manager_params, logger):
@@ -361,7 +370,11 @@ def _find_and_fill_form(webdriver, user_data, visit_id, debug, browser_params, m
     _dismiss_alert(webdriver)
 
     if debug:
-        screenshot_full_page(visit_id, browser_params['crawl_id'], webdriver, manager_params, debug_form_post_initial)
+        try:
+            screenshot_full_page(visit_id, browser_params['crawl_id'], webdriver, manager_params, debug_form_post_initial)
+        except Exception as e:
+            logger.exception('Error while taking screenshot: %s' % str(e))
+
         logger.debug('The current URL is %s' % webdriver.current_url)
         logger.debug('Filling any follow-up forms on this page...')
 
@@ -391,7 +404,11 @@ def _find_and_fill_form(webdriver, user_data, visit_id, debug, browser_params, m
 
                         time.sleep(_FORM_SUBMIT_SLEEP)
                         _dismiss_alert(webdriver)
-                        if debug: screenshot_full_page(visit_id, browser_params['crawl_id'], webdriver, manager_params, debug_form_post_followup)
+                        if debug:
+                            try:
+                                screenshot_full_page(visit_id, browser_params['crawl_id'], webdriver, manager_params, debug_form_post_followup)
+                            except Exception as e:
+                                logger.exception('Error while taking screenshot: %s' % str(e))
 
                 webdriver.close()
         webdriver.switch_to_window(main_handle)
@@ -412,7 +429,11 @@ def _find_and_fill_form(webdriver, user_data, visit_id, debug, browser_params, m
 
             time.sleep(_FORM_SUBMIT_SLEEP)
             _dismiss_alert(webdriver)
-            if debug: screenshot_full_page(visit_id, browser_params['crawl_id'], webdriver, manager_params, debug_form_post_followup)
+            if debug:
+                try:
+                    screenshot_full_page(visit_id, browser_params['crawl_id'], webdriver, manager_params, debug_form_post_followup)
+                except Exception as e:
+                    logger.exception('Error while taking screenshot: %s' % str(e))
         else:
             if debug: logger.debug('No follow-up forms on the current page')
 
@@ -486,12 +507,13 @@ def _find_newsletter_form(container, webdriver, debug, logger):
         z_index = _get_z_index(form, webdriver)
         has_modal_text = 'modal' in form_html or 'dialog' in form_html
         has_newsletter_text = 'newsletter' in form_html or 'updates' in form_html
+        has_message_text = not ('message' in form_html or 'contact us' in form_html or 'contact me' in form_html or 'message' in form_html or 'subject' in form_html)
         # - rank login dialogs lower, in case better forms exist
         #   (count occurrences of these keywords, since they might just be in a URL)
         login_text_count = -sum([form_html.count(s) for s in ['login', 'log in', 'sign in']])
         # - rank forms with more input elements higher
         input_field_count = len([x for x in input_fields if x.is_displayed()])
-        newsletter_forms.append((form, (z_index, int(has_modal_text), has_newsletter_text, login_text_count, input_field_count)))
+        newsletter_forms.append((form, (z_index, int(has_modal_text), int(has_newsletter_text), int(has_message_text), login_text_count, input_field_count)))
 
     if debug: logger.debug('%d are newsletter forms' % len(newsletter_forms))
 
@@ -625,7 +647,7 @@ def _form_fill_and_submit(form, user_info, webdriver, visit_id, clear, browser_p
     for input_field in input_fields:
         type = input_field.get_attribute('type').lower()
 
-        # execptions for checkbox and radio elements since these can be invisble but still visible
+        # exceptions for checkbox and radio elements since these can be invisble but still visible
         # because of superimposed elements
         if not input_field.is_displayed() and type != 'checkbox' and type != 'radio':
             continue
@@ -672,6 +694,10 @@ def _form_fill_and_submit(form, user_info, webdriver, visit_id, clear, browser_p
                 _type_in_field(input_field, user_info['tel'][6:], clear, webdriver)
             elif _element_contains_text(input_field, ['phone', 'tel', 'mobile']):
                 _type_in_field(input_field, user_info['tel'], clear, webdriver)
+            elif _element_contains_text(input_field, ['birthday', 'date of birth']):
+                _type_in_field(input_field, '', clear, webdriver)
+            elif _element_contains_text(input_field, 'subject'):
+                _type_in_field(input_field, '⠀⠀', clear, webdriver)
             elif _element_contains_text(input_field, 'search'):
                 pass
             else:
@@ -710,8 +736,10 @@ def _form_fill_and_submit(form, user_info, webdriver, visit_id, clear, browser_p
                         _type_in_field(input_field, user_info['tel'][6:], clear, webdriver)
                     elif _element_contains_text(parent, ['phone', 'tel', 'mobile']):
                         _type_in_field(input_field, user_info['tel'], clear, webdriver)
-                    elif _element_contains_text(parent, 'title'):
-                        _type_in_field(input_field, user_info['title'], clear, webdriver)
+                    elif _element_contains_text(parent, ['birthday', 'date of birth']):
+                        _type_in_field(input_field, '', clear, webdriver)
+                    elif _element_contains_text(parent, 'subject'):
+                        _type_in_field(input_field, '⠀⠀', clear, webdriver)
                     elif _element_contains_text(parent, 'name'):
                         if _element_contains_text(parent, ['first', 'forename', 'fname']):
                             _type_in_field(input_field, user_info['first_name'], clear, webdriver)
@@ -721,6 +749,8 @@ def _form_fill_and_submit(form, user_info, webdriver, visit_id, clear, browser_p
                             _type_in_field(input_field, user_info['user'], clear, webdriver)
                         else:
                             _type_in_field(input_field, user_info['full_name'], clear, webdriver)
+                    elif _element_contains_text(parent, 'title'):
+                        _type_in_field(input_field, user_info['title'], clear, webdriver)
                     elif _element_contains_text(parent, 'search'):
                         pass
                     else:
@@ -817,8 +847,23 @@ def _form_fill_and_submit(form, user_info, webdriver, visit_id, clear, browser_p
             selected_index = min(1, len(select_options) - 1)
         select.select_by_index(selected_index)
 
+    # fill in 'text' fields
+    ta_fields = form.find_elements_by_tag_name('textarea')
+    for ta_field in ta_fields:
+        if not ta_field.is_displayed():
+            continue
+
+        ta_field.send_keys(Keys.CONTROL, 'a')
+        ta_field.send_keys(Keys.BACKSPACE)
+        ta_field.send_keys('⠀⠀')
+
+
     # debug: save screenshot
-    if screenshot_suffix: screenshot_full_page(visit_id, browser_params['crawl_id'], webdriver, manager_params, screenshot_suffix)
+    if screenshot_suffix:
+        try:
+            screenshot_full_page(visit_id, browser_params['crawl_id'], webdriver, manager_params, screenshot_suffix)
+        except Exception as e:
+            logger.exception('Error while taking screenshot: %s' % str(e))
 
     # submit the form
     if submit_button is not None:
@@ -903,7 +948,7 @@ def get_container_parent(input_field, parent_depth=4):
     parent = None
     while i < parent_depth:
         parent = element.find_element_by_xpath('..')
-        if len(parent.find_elements_by_tag_name('input')) == 1 and parent.tag_name.lower() in ['div', 'span']:
+        if len(parent.find_elements_by_tag_name('input')) == 1 and parent.tag_name.lower() in ['div', 'span', 'li', 'p']:
             i = i+1
             element = parent
         else:
