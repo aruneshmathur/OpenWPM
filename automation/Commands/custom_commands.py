@@ -863,7 +863,7 @@ def _form_fill_and_submit(form, user_info, webdriver, visit_id, clear, browser_p
         try:
             screenshot_full_page(visit_id, browser_params['crawl_id'], webdriver, manager_params, screenshot_suffix)
         except Exception as e:
-            logger.exception('Error while taking screenshot: %s' % str(e))
+            pass
 
     # submit the form
     if submit_button is not None:
