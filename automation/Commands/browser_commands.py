@@ -323,9 +323,12 @@ def dump_page_source(visit_id, driver, manager_params, suffix=''):
     if suffix != '':
         suffix = '-' + suffix
 
+    outdir = os.path.join(manager_params['source_dump_path'], str(visit_id))
+    if not os.path.isdir(outdir):
+        os.makedirs(outdir)
+
     outname = md5(driver.current_url.encode('utf-8')).hexdigest()
-    outfile = os.path.join(manager_params['source_dump_path'],
-                           '%i-%s%s.html' % (visit_id, outname, suffix))
+    outfile = os.path.join(outdir, '%i-%s%s.html' % (visit_id, outname, suffix))
 
     with open(outfile, 'wb') as f:
         f.write(driver.page_source.encode('utf8'))

@@ -117,6 +117,9 @@ def fill_forms(url, user_data, num_links, page_timeout, debug, visit_id,
     if debug:
         screenshot_full_page(visit_id, browser_params['crawl_id'], webdriver, manager_params, 'landing_page')
 
+    if browser_params['bot_mitigation']:
+        bot_mitigation(webdriver)
+
     if _find_and_fill_form(webdriver, user_data, visit_id, debug, browser_params, manager_params, logger):
         if debug: logger.debug('Done searching and submitting forms, exiting')
         return
@@ -197,7 +200,12 @@ def fill_forms(url, user_data, num_links, page_timeout, debug, visit_id,
         try:
             # load the page
             logger.info("Clicking on link '%s' - %s" % (next_link[2], next_link[3]))
-            next_link[0].click()
+            try:
+                next_link[0].click()
+            except:
+                webdriver.execute_script('return arguments[0].click()', next_link[0])
+                time.sleep(_PAGE_LOAD_TIME)
+
             wait_until_loaded(webdriver, _PAGE_LOAD_TIME)
             if browser_params['bot_mitigation']:
                 bot_mitigation(webdriver)
@@ -238,7 +246,8 @@ def fill_forms(url, user_data, num_links, page_timeout, debug, visit_id,
                 webdriver.switch_to_window(main_handle)
                 time.sleep(1)
 
-        except:
+        except Exception as e:
+            logger.exception('Error while navigating to the link: %s' % str(e))
             pass
 
     if debug: logger.debug('Failed to find and submit a newsletter form')
@@ -476,12 +485,13 @@ def _find_newsletter_form(container, webdriver, debug, logger):
         # - rank modal/pop-up/dialogs higher, since these are likely to be sign-up forms
         z_index = _get_z_index(form, webdriver)
         has_modal_text = 'modal' in form_html or 'dialog' in form_html
+        has_newsletter_text = 'newsletter' in form_html or 'updates' in form_html
         # - rank login dialogs lower, in case better forms exist
         #   (count occurrences of these keywords, since they might just be in a URL)
         login_text_count = -sum([form_html.count(s) for s in ['login', 'log in', 'sign in']])
         # - rank forms with more input elements higher
         input_field_count = len([x for x in input_fields if x.is_displayed()])
-        newsletter_forms.append((form, (z_index, int(has_modal_text), login_text_count, input_field_count)))
+        newsletter_forms.append((form, (z_index, int(has_modal_text), has_newsletter_text, login_text_count, input_field_count)))
 
     if debug: logger.debug('%d are newsletter forms' % len(newsletter_forms))
 
@@ -541,6 +551,11 @@ def _is_email_input(input_field):
     elif type == 'text':
         if _element_contains_text(input_field, _KEYWORDS_EMAIL):
             return True
+
+        parent = get_container_parent(input_field)
+        if _element_contains_text(parent, _KEYWORDS_EMAIL):
+            return True
+
     return False
 
 def _has_submit_button(container):
@@ -617,40 +632,46 @@ def _form_fill_and_submit(form, user_info, webdriver, visit_id, clear, browser_p
 
         if type == 'email':
             # using html5 "email" type, this is probably an email field
-            _type_in_field(input_field, user_info['email'], clear)
+            _type_in_field(input_field, user_info['email'], clear, webdriver)
             text_field = input_field
         elif type == 'text':
             # try to decipher this based on field attributes
             if _element_contains_text(input_field, 'company'):
-                _type_in_field(input_field, user_info['company'], clear)
+                _type_in_field(input_field, user_info['company'], clear, webdriver)
             elif _element_contains_text(input_field, 'title'):
-                _type_in_field(input_field, user_info['title'], clear)
+                _type_in_field(input_field, user_info['title'], clear, webdriver)
             elif _element_contains_text(input_field, 'name'):
                 if _element_contains_text(input_field, ['first', 'forename', 'fname']):
-                    _type_in_field(input_field, user_info['first_name'], clear)
+                    _type_in_field(input_field, user_info['first_name'], clear, webdriver)
                 elif _element_contains_text(input_field, ['last', 'surname', 'lname']):
-                    _type_in_field(input_field, user_info['last_name'], clear)
+                    _type_in_field(input_field, user_info['last_name'], clear, webdriver)
                 elif _element_contains_text(input_field, ['user', 'account']):
-                    _type_in_field(input_field, user_info['user'], clear)
+                    _type_in_field(input_field, user_info['user'], clear, webdriver)
                 else:
-                    _type_in_field(input_field, user_info['full_name'], clear)
+                    _type_in_field(input_field, user_info['full_name'], clear, webdriver)
             elif _element_contains_text(input_field, ['zip', 'postal']):
-                _type_in_field(input_field, user_info['zip'], clear)
+                _type_in_field(input_field, user_info['zip'], clear, webdriver)
             elif _element_contains_text(input_field, 'city'):
-                _type_in_field(input_field, user_info['city'], clear)
+                _type_in_field(input_field, user_info['city'], clear, webdriver)
             elif _element_contains_text(input_field, 'state'):
-                _type_in_field(input_field, user_info['state'], clear)
+                _type_in_field(input_field, user_info['state'], clear, webdriver)
             elif _element_contains_text(input_field, _KEYWORDS_EMAIL):
-                _type_in_field(input_field, user_info['email'], clear)
+                _type_in_field(input_field, user_info['email'], clear, webdriver)
             elif _element_contains_text(input_field, ['street', 'address']):
                 if _element_contains_text(input_field, ['2', 'number']):
-                    _type_in_field(input_field, user_info['street2'], clear)
+                    _type_in_field(input_field, user_info['street2'], clear, webdriver)
                 elif _element_contains_text(input_field, '3'):
                     pass
                 else:
-                    _type_in_field(input_field, user_info['street1'], clear)
+                    _type_in_field(input_field, user_info['street1'], clear, webdriver)
+            elif _element_contains_text(input_field, ['area-code', 'areacode']):
+                _type_in_field(input_field, user_info['tel'][0:3], clear, webdriver)
+            elif _element_contains_text(input_field, ['local-prefix', 'prefix']):
+                _type_in_field(input_field, user_info['tel'][3:6], clear, webdriver)
+            elif _element_contains_text(input_field, ['local-suffix', 'suffix']):
+                _type_in_field(input_field, user_info['tel'][6:], clear, webdriver)
             elif _element_contains_text(input_field, ['phone', 'tel', 'mobile']):
-                _type_in_field(input_field, user_info['tel'], clear)
+                _type_in_field(input_field, user_info['tel'], clear, webdriver)
             elif _element_contains_text(input_field, 'search'):
                 pass
             else:
@@ -661,15 +682,57 @@ def _form_fill_and_submit(form, user_info, webdriver, visit_id, clear, browser_p
 
                 # default: assume email
                 else:
-                    _type_in_field(input_field, user_info['email'], clear)
+                    #_type_in_field(input_field, user_info['email'], clear, webdriver)
+                    parent = get_container_parent(input_field)
+
+                    if _element_contains_text(parent, 'company'):
+                        _type_in_field(input_field, user_info['company'], clear, webdriver)
+                    elif _element_contains_text(parent, ['zip', 'postal']):
+                        _type_in_field(input_field, user_info['zip'], clear, webdriver)
+                    elif _element_contains_text(parent, 'city'):
+                        _type_in_field(input_field, user_info['city'], clear, webdriver)
+                    elif _element_contains_text(parent, 'state'):
+                        _type_in_field(input_field, user_info['state'], clear, webdriver)
+                    elif _element_contains_text(parent, _KEYWORDS_EMAIL):
+                        _type_in_field(input_field, user_info['email'], clear, webdriver)
+                    elif _element_contains_text(parent, ['street', 'address']):
+                        if _element_contains_text(parent, ['2', 'number']):
+                            _type_in_field(input_field, user_info['street2'], clear, webdriver)
+                        elif _element_contains_text(parent, '3'):
+                            pass
+                        else:
+                            _type_in_field(input_field, user_info['street1'], clear, webdriver)
+                    elif _element_contains_text(parent, ['area-code', 'areacode']):
+                        _type_in_field(input_field, user_info['tel'][0:3], clear, webdriver)
+                    elif _element_contains_text(parent, ['local-prefix', 'prefix']):
+                        _type_in_field(input_field, user_info['tel'][3:6], clear, webdriver)
+                    elif _element_contains_text(parent, ['local-suffix', 'suffix']):
+                        _type_in_field(input_field, user_info['tel'][6:], clear, webdriver)
+                    elif _element_contains_text(parent, ['phone', 'tel', 'mobile']):
+                        _type_in_field(input_field, user_info['tel'], clear, webdriver)
+                    elif _element_contains_text(parent, 'title'):
+                        _type_in_field(input_field, user_info['title'], clear, webdriver)
+                    elif _element_contains_text(parent, 'name'):
+                        if _element_contains_text(parent, ['first', 'forename', 'fname']):
+                            _type_in_field(input_field, user_info['first_name'], clear, webdriver)
+                        elif _element_contains_text(parent, ['last', 'surname', 'lname']):
+                            _type_in_field(input_field, user_info['last_name'], clear, webdriver)
+                        elif _element_contains_text(parent, ['user', 'account']):
+                            _type_in_field(input_field, user_info['user'], clear, webdriver)
+                        else:
+                            _type_in_field(input_field, user_info['full_name'], clear, webdriver)
+                    elif _element_contains_text(parent, 'search'):
+                        pass
+                    else:
+                        _type_in_field(input_field, user_info['email'], clear, webdriver)
             text_field = input_field
         elif type == 'number':
             if _element_contains_text(input_field, ['phone', 'tel', 'mobile']):
-                _type_in_field(input_field, user_info['tel'], clear)
+                _type_in_field(input_field, user_info['tel'], clear, webdriver)
             elif _element_contains_text(input_field, ['zip', 'postal']):
-                _type_in_field(input_field, user_info['zip'], clear)
+                _type_in_field(input_field, user_info['zip'], clear, webdriver)
             else:
-                _type_in_field(input_field, user_info['zip'], clear)
+                _type_in_field(input_field, user_info['zip'], clear, webdriver)
         elif type == 'checkbox' or type == 'radio':
             # check anything/everything
             if input_field.is_displayed():
@@ -686,13 +749,13 @@ def _form_fill_and_submit(form, user_info, webdriver, visit_id, clear, browser_p
                 except:
                     pass
         elif type == 'password':
-            _type_in_field(input_field, user_info['password'], clear)
+            _type_in_field(input_field, user_info['password'], clear, webdriver)
         elif type == 'tel':
             # exceptions
             if _element_contains_text(input_field, ['zip', 'postal',]):
-                _type_in_field(input_field, user_info['zip'], clear)
+                _type_in_field(input_field, user_info['zip'], clear, webdriver)
             else:
-                _type_in_field(input_field, user_info['tel'], clear)
+                _type_in_field(input_field, user_info['tel'], clear, webdriver)
         elif type == 'submit' or type == 'button' or type == 'image':
             if _element_contains_text(input_field, _KEYWORDS_SUBMIT):
                 submit_button = input_field
@@ -701,7 +764,7 @@ def _form_fill_and_submit(form, user_info, webdriver, visit_id, clear, browser_p
             pass
         else:
             # default: assume email
-            _type_in_field(input_field, user_info['email'], clear)
+            _type_in_field(input_field, user_info['email'], clear, webdriver)
 
     # find 'button' tags (if necessary)
     if submit_button is None:
@@ -786,12 +849,25 @@ def _element_contains_text(element, text):
                 return True
     return False
 
-def _type_in_field(input_field, text, clear):
+def _type_in_field(input_field, text, clear, webdriver):
     """Types text into an input field."""
+    try:
+        input_field.click()
+    except:
+        pass
+
     if clear:
         input_field.send_keys(Keys.CONTROL, 'a')
         input_field.send_keys(Keys.BACKSPACE)
     input_field.send_keys(text)
+
+    current_value = input_field.get_attribute('value')
+    if current_value != text:
+        try:
+            webdriver.execute_script('arguments[0].value = arguments[1]', input_field, text)
+        except:
+            pass
+
 
 def _get_dialog_container(webdriver):
     """If there exists a modal popup, return its container."""
@@ -820,3 +896,17 @@ def _check_form_blacklist(form):
             return True
 
     return False
+
+def get_container_parent(input_field, parent_depth=4):
+    i = 0
+    element = input_field
+    parent = None
+    while i < parent_depth:
+        parent = element.find_element_by_xpath('..')
+        if len(parent.find_elements_by_tag_name('input')) == 1 and parent.tag_name.lower() in ['div', 'span']:
+            i = i+1
+            element = parent
+        else:
+            break
+
+    return element
