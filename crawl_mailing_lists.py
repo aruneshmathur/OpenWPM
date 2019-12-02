@@ -50,6 +50,7 @@ manager_params['database_name'] = db_name
 manager = TaskManager.TaskManager(manager_params, browser_params)
 
 data = pd.read_csv(site_list)
+data = data.dropna(subset=['final_website'])
 
 for index, row in data.iterrows():
     site = get_site(row['final_website'])

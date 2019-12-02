@@ -363,7 +363,7 @@ def _find_and_fill_form(webdriver, user_data, visit_id, debug, browser_params, m
         dump_page_source(visit_id, webdriver, manager_params, debug_page_source_initial)
 
     email = user_data['email']
-    user_info = _get_user_info(email)
+    user_info = user_data
     _form_fill_and_submit(newsletter_form, user_info, webdriver, visit_id, True, browser_params, manager_params, debug_form_pre_initial if debug else None)
     logger.info('Submitted form on [%s] with email [%s] on visit_id [%d]', current_url, email, visit_id)
     time.sleep(_FORM_SUBMIT_SLEEP)
