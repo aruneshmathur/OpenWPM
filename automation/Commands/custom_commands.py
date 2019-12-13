@@ -826,6 +826,17 @@ def _form_fill_and_submit(form, user_info, webdriver, visit_id, clear, browser_p
                     submit_button = dbutton
                     break
 
+    # Check for 'a' tags that are buttons
+    if submit_button is None:
+        a_buttons = form.find_elements_by_tag_name('a')
+        for abutton in a_buttons:
+            if not abutton.is_displayed():
+                continue
+
+            if _element_contains_text(abutton, _KEYWORDS_SUBMIT):
+                submit_button = abutton
+                break
+
     # fill in 'select' fields
     select_fields = form.find_elements_by_tag_name('select')
     for select_field in select_fields:
